@@ -1,0 +1,379 @@
+package maven;
+
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.openqa.selenium.support.PageFactory;
+
+public class objects {
+	public WebDriver driver;
+
+	@FindBy(id = "vchLogin_Name")
+	public WebElement userName;
+
+	@FindBy(name = "vchPassword")
+	public WebElement password;
+	@FindBy(xpath = ("//button[@onclick='javascript:Submit_frmLogin()']"))
+	public WebElement loginButton;
+
+	@FindBy(id = "fraCureMD_Menu")
+	public WebElement Headeriframe;
+
+	@FindBy(id = "patientBtn")
+	public WebElement patientsButton;
+
+	@FindBy(id = "fraCureMD_Body")
+	public WebElement Addiframe;
+	
+	@FindBy(xpath = ("//img[@alt='Add Patient']"))
+	public WebElement addpatientButton;
+	
+	@FindBy(id = "cmbVTitle")
+	public WebElement title;
+	
+	@FindBy(id = "txtVFNAME")
+	public WebElement firstName;
+	
+	@FindBy(id = "txtVLNAME")
+	public WebElement lastName;
+	
+	@FindBy(id = "cmbVSEX")
+	public WebElement gender;
+	
+	@FindBy(id = "txtDDOB")
+	public WebElement DOB;
+	
+	@FindBy(id = "cmbILOCID")
+	public WebElement location;
+	
+	@FindBy(id = "incPinsurance")
+	public WebElement insuranceChekBox;
+	
+	@FindBy(id = "cmbIPLANID")
+	public WebElement plan ;
+	
+	@FindBy(id = "cmbPlanAdd")
+	public WebElement address;
+	
+	@FindBy(id="txtDSIGNONFILE")
+	public WebElement signOnFile;
+	
+	@FindBy(xpath=("//td[@id='tdsave']"))
+	public WebElement savePatientbutton;
+	
+	@FindBy(xpath=("saveAsNewButton"))
+	public WebElement saveAsNew;
+	
+	
+	public objects(WebDriver driver) {
+		this.driver = driver;
+		PageFactory.initElements(driver, this);
+	}
+	
+}
+
+-----------------------------------------------------------------------------------------------------
+package release;
+
+import java.time.Duration;
+
+import org.openqa.selenium.WebDriver;
+
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+
+import io.github.bonigarcia.wdm.WebDriverManager;
+import maven.getDataSet;
+import maven.objects;
+
+
+public class release {
+	
+	
+		public  WebDriver driver;
+		public objects obj;
+		//public WebDriverWait myWait= new WebDriverWait(driver, Duration.ofSeconds(30));
+		@BeforeTest
+		public void getURL() 
+		{
+			String baseUrl = "http://baseline01.curemd.com/curemd/datLogin.asp";
+			
+			WebDriverManager.chromedriver().setup();
+			 driver = new ChromeDriver();
+		
+			driver.get(baseUrl);
+			driver.manage().window().maximize();
+			
+		}
+		
+	
+		@Test(priority=1)
+		public void Login() throws InterruptedException {
+			obj = new objects(driver);
+			 //Thread.sleep(3000);
+			obj.userName.sendKeys("GlobalPeriod");
+			obj.password.sendKeys("SuPPort.2014");
+			obj.loginButton.click();
+			Thread.sleep(3000);
+		}
+		@Test(priority=2)
+		public void patientButton() throws InterruptedException {
+			String orignalWindow= driver.getWindowHandle();
+			for (String windowHandle : driver.getWindowHandles()) {
+			    if(!orignalWindow.contentEquals(windowHandle)) {
+			        driver.switchTo().window(windowHandle);
+			        
+			        break;
+			    }
+			 
+		}
+			
+			
+		}	
+		@DataProvider (name="patientData")
+		public Object[][] getExData(){
+			Object data[][]= getDataSet.getExcelData("DataSet");
+			return data;
+			
+		}
+			@Test(priority=3,dataProvider="patientData")
+			public void dataentry(String firstName,String lastName,String DOB) throws InterruptedException {
+				
+				WebDriverWait myWait= new WebDriverWait(driver, Duration.ofSeconds(10));
+				
+				driver.switchTo().defaultContent();
+				myWait.until(ExpectedConditions.visibilityOf(obj.Headeriframe));
+				driver.switchTo().frame(obj.Headeriframe);
+				Thread.sleep(3000);
+				obj.patientsButton.click();
+				driver.switchTo().defaultContent();
+				//myWait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(obj.Addiframe));
+				myWait.until(ExpectedConditions.visibilityOf(obj.Addiframe));
+				driver.switchTo().frame(obj.Addiframe);
+				obj.addpatientButton.click();
+				try {
+				Select title = new Select(obj.title);
+			title.selectByVisibleText("Mr");
+			
+			obj.firstName.sendKeys(firstName);
+			obj.lastName.sendKeys(lastName);
+			
+			Select gender = new Select(obj.gender);
+			gender.selectByVisibleText("Male");
+			
+			obj.DOB.sendKeys(DOB);
+			
+			
+			Select location = new Select(obj.location);
+			location.selectByValue("10");
+			
+			
+			obj.insuranceChekBox.click();
+			
+			Select plan = new Select(obj.plan);
+			plan.selectByValue("10");
+			
+			Select adress = new Select(obj.address);
+			adress.selectByValue("12");
+			
+			obj.signOnFile.sendKeys("08012022");
+			
+			obj.savePatientbutton.click();
+			}
+			catch (Exception e){
+				obj.saveAsNew.click();
+				
+			}
+			
+		}
+		
+}
+------------------------------------------------------------------------------------
+package maven;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import java.io.IOException;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+
+
+
+public class getDataSet {
+	static Workbook book;
+	static Sheet sheet;
+	
+	public static String sheetpath="C:\\Users\\4083\\eclipse-workspace\\maven\\src\\test\\java\\release\\DataSet.xlsx";
+	
+	public static Object[][] getExcelData(String sheetname)
+	{
+		FileInputStream file=null;
+		try {
+			
+			file=new FileInputStream(sheetpath);
+			
+		}
+		catch(FileNotFoundException e) {
+			
+			e.printStackTrace();
+			
+		}
+		
+		try {
+			
+			book= WorkbookFactory.create(file);
+			
+		}
+		
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		} catch (InvalidFormatException e) {
+			e.printStackTrace();
+		}
+		
+		sheet= book.getSheet(sheetname);
+		Object [][]data=new Object[sheet.getLastRowNum()][sheet.getRow(0).getLastCellNum()];
+		for(int i=0;i<sheet.getLastRowNum();i++) {
+			for(int k=0;k<sheet.getRow(0).getLastCellNum();k++) {
+				data[i][k]=sheet.getRow(i+1).getCell(k).toString();
+			}
+			}
+		
+		return data;
+		
+
+}
+	 
+	 
+ }
+
+----------------------------------------------------------------------------------------------------------------
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>maven</groupId>
+	<artifactId>maven</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<dependencies>
+		<!-- https://mvnrepository.com/artifact/org.seleniumhq.selenium/selenium-java -->
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-java</artifactId>
+			<version>4.3.0</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.testng/testng -->
+		<dependency>
+			<groupId>org.testng</groupId>
+			<artifactId>testng</artifactId>
+			<version>7.5</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/io.github.bonigarcia/webdrivermanager -->
+		<dependency>
+			<groupId>io.github.bonigarcia</groupId>
+			<artifactId>webdrivermanager</artifactId>
+			<version>5.2.0</version>
+		</dependency>
+<!-- https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml -->
+<dependency>
+    <groupId>org.apache.poi</groupId>
+    <artifactId>poi-ooxml</artifactId>
+    <version>4.1.2</version>
+</dependency>
+<!-- https://mvnrepository.com/artifact/org.apache.poi/poi -->
+<dependency>
+    <groupId>org.apache.poi</groupId>
+    <artifactId>poi</artifactId>
+    <version>4.1.2</version>
+</dependency>
+<!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
+<dependency>
+    <groupId>commons-io</groupId>
+    <artifactId>commons-io</artifactId>
+    <version>2.11.0</version>
+</dependency>
+<!-- https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml-schemas -->
+<dependency>
+    <groupId>org.apache.poi</groupId>
+    <artifactId>poi-ooxml-schemas</artifactId>
+    <version>4.1.2</version>
+</dependency>
+<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>openxml4j</artifactId>
+			<version>1.0-beta</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-scratchpad</artifactId>
+			<version>4.1.1</version>
+		</dependency>
+		
+		<dependency>
+    <groupId>org.seleniumhq.selenium</groupId>
+    <artifactId>selenium-java</artifactId>
+    <version>4.4.0</version>
+</dependency>
+
+
+<!-- https://mvnrepository.com/artifact/org.testng/testng -->
+<dependency>
+    <groupId>org.testng</groupId>
+    <artifactId>testng</artifactId>
+    <version>7.6.1</version>
+    <scope>test</scope>
+</dependency>
+<dependency>
+   <groupId>org.apache.poi</groupId>
+   <artifactId>poi</artifactId>
+   <version>3.9</version>
+</dependency>
+<dependency>
+   <groupId>xml-apis</groupId>
+   <artifactId>xml-apis</artifactId>
+   <version>1.4.01</version>
+</dependency>
+<dependency>
+   <groupId>org.apache.poi</groupId>
+   <artifactId>poi-ooxml</artifactId>
+   <version>3.9</version>
+   <exclusions>
+     <exclusion>
+       <artifactId>xml-apis</artifactId>
+       <groupId>xml-apis</groupId>
+     </exclusion>       
+   </exclusions>
+</dependency>
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-api</artifactId>
+    <version>2.18.0</version>
+  </dependency>
+  <dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-core</artifactId>
+    <version>2.18.0</version>
+  </dependency>
+
+<!-- https://mvnrepository.com/artifact/io.github.bonigarcia/webdrivermanager -->
+<dependency>
+    <groupId>io.github.bonigarcia</groupId>
+    <artifactId>webdrivermanager</artifactId>
+    <version>5.2.3</version>
+</dependency>
+
+
+
+
+
+	</dependencies>
+</project>
